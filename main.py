@@ -1,10 +1,9 @@
-
 from tetris import Tetris
 
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     # TODO get args from CLI
     tetris = Tetris()
-
-    input = 'Q4,Q4'
-    tetris.solve(input)
+    #'Q0,Q1,Q2,Q3'
+    input = "I0,I4,Q8 "
+    sequence_height = tetris.solve(input)
+    print(f"sequence_height: {sequence_height}")
