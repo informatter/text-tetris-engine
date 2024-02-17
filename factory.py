@@ -1,5 +1,5 @@
-
 from models import QPolyminoe, IPolyminoe, ZPolyminoe, TPolyminoe, InterfacePolyominoe
+
 
 class PolyominoeFactory:
     def __init__(self):
@@ -15,4 +15,4 @@ class PolyominoeFactory:
         if polyminoe_type == "T":
             return TPolyminoe()
         else:
-            raise Exception(f'{polyminoe_type} is not implemented in the factory yet!')
+            raise Exception(f"{polyminoe_type} is not implemented in the factory yet!")
