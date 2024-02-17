@@ -1,18 +1,8 @@
 import numpy as np
 from typing import List
 import re
-from models import QPolyminoe, IPolyminoe, InterfacePolyominoe
-
-
-class PolyominoeFactory:
-    def __init__(self):
-        pass
-
-    def create(self, polyminoe_type: str) -> InterfacePolyominoe:
-        if polyminoe_type == "Q":
-            return QPolyminoe()
-        if polyminoe_type == "I":
-            return IPolyminoe()
+from models import InterfacePolyominoe
+from factory import PolyominoeFactory
 
 
 class Tetris:
@@ -21,9 +11,26 @@ class Tetris:
         self.rows = rows
         self.columns = columns
         self.polyominoe_types = ["Q", "Z", "S", "T", "I", "L", "J"]
+        self.polyominoes:List[InterfacePolyominoe] = []
         self.polyominoe_factory = PolyominoeFactory()
         self.is_empty: bool = True
         self.__init_state()
+
+
+
+    def __add_polyminoe_to_grid(self, polyominoe:InterfacePolyominoe, cell:dict):
+        """
+        Ads the polyominoe to the tetris grid
+
+        Args
+        ----
+        - `polyominoe:InterfacePolyominoe` - The polyominoe to place
+        - `cell:dict` - A dictionary containing the row and column index of the initial cell the polyminoe
+        will be added to 
+        """
+            
+        polyominoe.add(self.grid, cell)
+        self.polyominoes.append(polyominoe)
 
     def __extract_polyominoe_data(self, input: str) -> dict[int, str]:
         """
@@ -54,11 +61,16 @@ class Tetris:
         """
         self.grid = np.zeros((self.rows, self.columns), dtype=int)
 
-    def __add_to_grid(self, polyominoe_type: str, start_cell: dict):
+
+    def __calculate_placement(self, polyominoe_type: str, column_index: int):
         """
-        Adds the polynomio to the grid. This will change the state of all inner cells
-        to occupied.
+        Gets the appropiate placement cell.
+        - The placement cell should be empty
+        - The placement cell should guarantee that the polyominoe is collision free
         """
+
+        target_column: List[int] = self.grid[:, column_index]
+
         if polyominoe_type not in self.polyominoe_types:
             print(f"polyominoe type {polyominoe_type} is currently not implemented! ")
             return
@@ -66,10 +78,36 @@ class Tetris:
         polyominoe: InterfacePolyominoe = self.polyominoe_factory.create(
             polyominoe_type
         )
-        polyominoe.add(self.grid, start_cell)
 
-        if self.is_empty is True:
+        bottom_most_cell_index = self.rows - 1
+
+        if self.is_empty:
+            cell = {"row": bottom_most_cell_index, "column": column_index}
+            self.__add_polyminoe_to_grid(polyominoe,cell)
             self.is_empty = False
+            return
+
+        found_collision: bool = False
+        total_entries: int = len(target_column)
+
+        for row_index, cell in enumerate(target_column):
+            if row_index == total_entries - 1:
+                continue
+
+            has_collision: bool = polyominoe.check_collision(
+                self.grid, row_index, column_index
+            )
+            if has_collision:
+                # Adds the polyominoe to the grid before any collision with another existing polyominoe
+                cell = {"row": row_index, "column": column_index}
+                self.__add_polyminoe_to_grid(polyominoe,cell)
+                found_collision = True
+                break
+
+        if found_collision is False:
+            # Adds the polyominoe to the bottom of the grid.
+            cell = {"row": bottom_most_cell_index, "column": column_index}
+            self.__add_polyminoe_to_grid(polyominoe,cell)
 
     def __place(self, polyominoe_type: str, column_index: int):
         """
@@ -80,40 +118,13 @@ class Tetris:
         - `column_index:int` - The integer represents the left-most column of the grid that the polyominoe occupies, starting from zero.
         """
 
-        # get cell  to be placed
+        self.__calculate_placement(polyominoe_type, column_index)
 
-        target_column: List[int] = self.grid[:, column_index]
-
-        if self.is_empty:
-            placement_cell_row_index = self.rows - 1  # gets the bottom most cell
-
-        else:
-            placement_cell_row_index = -1
-            total_entries: int = len(target_column)
-
-            # loops from top to bottom, due to 2d array being stored in row major order
-            for row_index, cell in enumerate(target_column):
-                if row_index == total_entries - 1:
-                    continue
-                next_index = row_index + 1
-                next_cell = target_column[next_index]
-                if cell == 0 and next_cell == 1:
-                    placement_cell_row_index = row_index
-                    break
-
-        # TODO when placement_cell_row_index remains -1 it means that the game is finished?
-        print(f"placement_cell_row_index: {placement_cell_row_index}")
-
-        # update cells to occupied (1)
-        start_cell = {"row": placement_cell_row_index, "column": column_index}
-        self.__add_to_grid(polyominoe_type, start_cell)
         print(self.grid)
 
         result: bool = self.__destroy_filled_row()
         if result:
             # TODO shift all pieces down.
-            # get all columns which contain 1's
-            # Find new position for all 1's -> move down until an empty cell is found, with the lowest row index
             pass
 
     def __destroy_filled_row(self) -> bool:
@@ -131,15 +142,20 @@ class Tetris:
 
         if np.any(mask):
             print(f"filled row found!")
-            row_index = np.argmax(
+            filled_row_index = np.argmax(
                 mask
             )  # Find the index of the first row with only '1' entries
-            self.grid[row_index, :] = 0  # Replace all '1's with '0's in the found row
+
+            for polyominoe in  self.polyominoes:
+                polyominoe.remove(filled_row_index)
+
+            self.grid[filled_row_index, :] = 0  # Replace all '1's with '0's in the found row
+
             print(self.grid)
-            print(f"filled row destroyed!")
             return True
-        else:
-            return False
+        
+        return False
+
 
     def __compute_sequence_height(self) -> int:
         """
@@ -195,4 +211,3 @@ class Tetris:
             self.__place(polyominoe, column_index)
 
         return self.__compute_sequence_height()
- 
