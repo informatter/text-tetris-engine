@@ -8,7 +8,8 @@ if __name__ == "__main__":
     # I0,I4,Q8
 
     #Q1,Q4,Q8,Q8,I4,Q0,Q2
+    #"S0,S3,Q8,Q8,Q8,Q8,Q8,Q8"
 
-    input = "T1,Z3,I4"
+    input = "L0,L0"
     sequence_height = tetris.solve(input)
     print(f"sequence_height: {sequence_height}")

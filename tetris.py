@@ -191,6 +191,11 @@ class Tetris:
         height = self.rows - smallest_row_index
 
         return height
+    
+    def reset(self):
+        self.polyominoes = []
+        self.__init_state()
+        self.is_empty = True
 
     def solve(self, input: str) -> int:
         """
@@ -217,4 +222,5 @@ class Tetris:
 
             self.__place(polyominoe, column_index)
 
-        return self.__compute_sequence_height()
+        sequence_height =  self.__compute_sequence_height()
+        return sequence_height

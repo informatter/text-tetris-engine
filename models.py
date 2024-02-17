@@ -98,9 +98,10 @@ class InterfacePolyominoe(ABC):
 
 class QPolyminoe(InterfacePolyominoe):
     """
-    The Q Polymino occupies 4 cells, 2 at the bottom and 2 at the top
+    ```
     # #
     # #
+    ```
     """
 
     def __init__(self):
@@ -156,8 +157,9 @@ class QPolyminoe(InterfacePolyominoe):
 
 class IPolyminoe(InterfacePolyominoe):
     """
-    The I Polymino occupies 4 cells horizontally
+    ```
     # # # #
+    ```
     """
 
     def __init__(self):
@@ -275,7 +277,6 @@ class ZPolyminoe(InterfacePolyominoe):
     def add(self, grid, start_cell: dict):
         row = start_cell["row"]
         col = start_cell["column"]
-        print(f'col_index {self.type} : {col} ')
         self.occupied_cells = [
             Cell(row,col),
             Cell(row,col+1),
@@ -286,16 +287,8 @@ class ZPolyminoe(InterfacePolyominoe):
         for occupied_cell in self.occupied_cells:
             grid[occupied_cell.row_index, occupied_cell.col_index] = 1
 
-        # grid[row, col] = 1
-        # grid[row, col + 1] = 1
-        # grid[row - 1, col] = 1
-        # grid[row - 1, col - 1] = 1
 
     def check_collision(self, grid, row_index: int, column_index: int) -> bool:
-        """
-        # #
-          # #
-        """
 
         # checks if top left leg has a colliding cell underneath it
         if grid[row_index, column_index - 1] == 1:
@@ -306,6 +299,126 @@ class ZPolyminoe(InterfacePolyominoe):
 
         # checks if root has a colliding cell underneath it
         if grid[row_index + 1, column_index] == 1:
+            return True
+
+        return False
+    
+
+class SPolyminoe(InterfacePolyominoe):
+    """
+    ```
+        # #
+      # #
+    ```
+    """
+
+    def __init__(self):
+        super().__init__("SPolyminoe")
+
+    def add(self, grid, start_cell: dict):
+        row = start_cell["row"]
+        col = start_cell["column"]
+        self.occupied_cells = [
+            Cell(row,col),
+            Cell(row,col+1),
+            Cell(row -1,col+1),
+            Cell(row -1,col + 2)
+        ]
+
+        for occupied_cell in self.occupied_cells:
+            grid[occupied_cell.row_index, occupied_cell.col_index] = 1
+
+
+    def check_collision(self, grid, row_index: int, column_index: int) -> bool:
+        
+        # checks if bottom left leg has a colliding cell underneath it
+        if grid[row_index + 1, column_index] == 1:
+            return True
+        
+         # checks if center has a colliding cell underneath it
+        if grid[row_index + 1, column_index + 1] == 1:
+            return True
+        
+        # checks if top right leg  has a colliding cell underneath it
+        if grid[row_index - 1, column_index + 1] == 1:
+            return True
+
+        return False
+    
+
+class LPolyminoe(InterfacePolyominoe):
+    """
+    ```
+    #
+    #
+    # # 
+    ```
+    """
+
+    def __init__(self):
+        super().__init__("LPolyminoe")
+
+    def add(self, grid, start_cell: dict):
+        row = start_cell["row"]
+        col = start_cell["column"]
+        self.occupied_cells = [
+            Cell(row,col),
+            Cell(row-1,col),
+            Cell(row -2,col),
+            Cell(row,col + 1)
+        ]
+
+        for occupied_cell in self.occupied_cells:
+            grid[occupied_cell.row_index, occupied_cell.col_index] = 1
+
+
+    def check_collision(self, grid, row_index: int, column_index: int) -> bool:
+        
+         # checks if center has a colliding cell underneath it
+        if grid[row_index + 1, column_index] == 1:
+            return True
+        
+        # checks if bottom right leg  has a colliding cell underneath it
+        if grid[row_index  +1, column_index + 1] == 1:
+            return True
+
+        return False
+    
+
+class JPolyminoe(InterfacePolyominoe):
+    """
+    ```
+      #
+      #
+    # # 
+    ```
+    """
+
+    def __init__(self):
+        super().__init__("JPolyminoe")
+
+    def add(self, grid, start_cell: dict):
+        row = start_cell["row"]
+        col = start_cell["column"]
+        self.occupied_cells = [
+            Cell(row,col),
+            Cell(row,col+1),
+            Cell(row-1,col+1),
+            Cell(row-2,col + 1)
+        ]
+
+        for occupied_cell in self.occupied_cells:
+            grid[occupied_cell.row_index, occupied_cell.col_index] = 1
+
+
+    def check_collision(self, grid, row_index: int, column_index: int) -> bool:
+        
+         # checks if center has a colliding cell underneath it
+        if grid[row_index + 1, column_index] == 1:
+            return True
+        
+        # checks if bottom right leg  has a colliding cell underneath it
+        if grid[row_index  +1, column_index + 1] == 1:
             return True
 
         return False

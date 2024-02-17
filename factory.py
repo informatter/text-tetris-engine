@@ -1,18 +1,21 @@
-from models import QPolyminoe, IPolyminoe, ZPolyminoe, TPolyminoe, InterfacePolyominoe
+from models import QPolyminoe,JPolyminoe,SPolyminoe,LPolyminoe, IPolyminoe, ZPolyminoe, TPolyminoe, InterfacePolyominoe
 
 
 class PolyominoeFactory:
     def __init__(self):
-        pass
+        self.polyominoe_classes = {
+            "Q": QPolyminoe,
+            "I": IPolyminoe,
+            "Z": ZPolyminoe,
+            "T": TPolyminoe,
+            "S": SPolyminoe,
+            "L": LPolyminoe,
+            "J": JPolyminoe,
+        }
 
-    def create(self, polyminoe_type: str) -> InterfacePolyominoe:
-        if polyminoe_type == "Q":
-            return QPolyminoe()
-        if polyminoe_type == "I":
-            return IPolyminoe()
-        if polyminoe_type == "Z":
-            return ZPolyminoe()
-        if polyminoe_type == "T":
-            return TPolyminoe()
+    def create(self, polyomino_type: str) -> InterfacePolyominoe:
+        polyomino_class = self.polyominoe_classes.get(polyomino_type)
+        if polyomino_class:
+            return polyomino_class()
         else:
-            raise Exception(f"{polyminoe_type} is not implemented in the factory yet!")
+            raise Exception(f"{polyomino_type} is not implemented in the factory yet!")
