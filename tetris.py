@@ -1,4 +1,5 @@
 import numpy as np
+from numpy import ndarray
 from typing import List
 import re
 from models import InterfacePolyominoe
@@ -7,7 +8,7 @@ from factory import PolyominoeFactory
 
 class Tetris:
     def __init__(self, rows: int = 10, columns: int = 10):
-        self.grid = None
+        self.grid:ndarray[int] = None
         self.rows = rows
         self.columns = columns
         self.polyominoe_types = ["Q", "Z", "S", "T", "I", "L", "J"]
@@ -57,7 +58,7 @@ class Tetris:
         0 = empty
         1 = occupied
         """
-        self.grid = np.zeros((self.rows, self.columns), dtype=int)
+        self.grid:ndarray[int] = np.zeros((self.rows, self.columns), dtype=int)
 
     def __calculate_placement(self, polyominoe_type: str, column_index: int):
         """
@@ -119,12 +120,14 @@ class Tetris:
 
         print(self.grid)
 
-        result: bool = self.__destroy_filled_row()
-        if result:
-            # TODO shift all pieces down.
-            pass
+        result: dict[int,bool] = self.__destroy_filled_row()
+        if result["destroyed"]:
+            filled_row_index = result["filled_row_index"]
+            for polyominoe in self.polyominoes:
+                polyominoe.shift_down(self.grid)
+            print(self.grid)
 
-    def __destroy_filled_row(self) -> bool:
+    def __destroy_filled_row(self) -> dict[int,bool]:
         """
         Find the first row in the array that contains only '1' entries and replace all '1's with '0's in that row.
 
@@ -151,9 +154,15 @@ class Tetris:
             ] = 0  # Replace all '1's with '0's in the found row
 
             print(self.grid)
-            return True
+            return {
+                "filled_row_index":filled_row_index,
+                "destroyed":True
+            }
 
-        return False
+        return {
+            "filled_row_index":-1,
+            "destroyed":False
+        }
 
     def __compute_sequence_height(self) -> int:
         """
