@@ -86,12 +86,6 @@ class QPolyminoe(InterfacePolyominoe):
             return True
         return False
 
-    # def remove(self, filled_row_index:int):
-
-    #     for index, occupied_cell in enumerate(self.occupied_cells):
-    #         if  occupied_cell['row'] == filled_row_index:
-    #             self.occupied_cells.pop(index)
-
 
 class IPolyminoe(InterfacePolyominoe):
     """
@@ -142,9 +136,6 @@ class IPolyminoe(InterfacePolyominoe):
 
         return False
 
-    # def remove(self, grid):
-    #     raise Exception("Not implemented!")
-
 
 class TPolyminoe(InterfacePolyominoe):
     """
@@ -192,9 +183,6 @@ class TPolyminoe(InterfacePolyominoe):
 
         return False
 
-    # def remove(self, grid):
-    #     raise Exception("Not implemented!")
-
 
 class ZPolyminoe(InterfacePolyominoe):
     """
@@ -234,6 +222,3 @@ class ZPolyminoe(InterfacePolyominoe):
             return True
 
         return False
-
-    # def remove(self, grid):
-    #     raise Exception("Not implemented!")
