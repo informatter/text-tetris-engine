@@ -6,7 +6,7 @@ from models import (
     IPolyminoe,
     ZPolyminoe,
     TPolyminoe,
-    InterfacePolyominoe,
+    AbstractPolyominoe,
 )
 
 
@@ -22,7 +22,7 @@ class PolyominoeFactory:
             "J": JPolyminoe,
         }
 
-    def create(self, polyomino_type: str) -> InterfacePolyominoe:
+    def create(self, polyomino_type: str) -> AbstractPolyominoe:
         polyomino_class = self.polyominoe_classes.get(polyomino_type)
         if polyomino_class:
             return polyomino_class()

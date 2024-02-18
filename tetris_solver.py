@@ -2,7 +2,7 @@ import numpy as np
 from numpy import ndarray
 from typing import List
 import re
-from models import InterfacePolyominoe
+from models import AbstractPolyominoe
 from factory import PolyominoeFactory
 
 
@@ -11,12 +11,12 @@ class TetrisSolver:
         self.grid: ndarray[int] = None
         self.rows = rows
         self.columns = columns
-        self.polyominoes: List[InterfacePolyominoe] = []
+        self.polyominoes: List[AbstractPolyominoe] = []
         self.polyominoe_factory = PolyominoeFactory()
         self.is_empty: bool = True
         self.__init_state()
 
-    def __add_polyminoe_to_grid(self, polyominoe: InterfacePolyominoe, cell: dict):
+    def __add_polyminoe_to_grid(self, polyominoe: AbstractPolyominoe, cell: dict):
         """
         Ads the polyominoe to the tetris grid
 
@@ -36,14 +36,11 @@ class TetrisSolver:
         Note: The method assumes that all inputs will always have a single alphabeitcal letter
         and a single integer.
 
-        For example:
-        'Q0' -> 0
-
         Returns
         -------
         A dict with the following keys:
-            - column_index: The index of the column of where the polyominoe should be placed.
-            - polyominoe: The letter of the polyominoe
+            - `column_index:int`: The index of the column of where the polyominoe should be placed.
+            - `polyominoe:str`: The letter of the polyominoe
         """
         match = re.match(r"([A-Za-z])(\d+)", input)
         column_index = int(match.group(2))
@@ -53,22 +50,26 @@ class TetrisSolver:
 
     def __init_state(self):
         """
-        Initializes the initial state of the grid to zero.
-        0 = empty
-        1 = occupied
+        Initializes the initial state of the grid to zero.\n
+        - 0 = empty
+        - 1 = occupied
         """
         self.grid: ndarray[int] = np.zeros((self.rows, self.columns), dtype=int)
 
     def __calculate_placement(self, polyominoe_type: str, column_index: int):
         """
-        Gets the appropiate placement cell.
-        - The placement cell should be empty
-        - The placement cell should guarantee that the polyominoe is collision free
+        Gets an empy cell in the grid which guarantees that the polyominoe is collision free
+
+        Args
+        ----
+        - `polyominoe_type: str` -  The type of polyominoe
+        - `column_index: int` - Represents the index of the left-most column that the polyominoe occupies
+
         """
 
         target_column: List[int] = self.grid[:, column_index]
 
-        polyominoe: InterfacePolyominoe = self.polyominoe_factory.create(
+        polyominoe: AbstractPolyominoe = self.polyominoe_factory.create(
             polyominoe_type
         )
 
@@ -113,13 +114,10 @@ class TetrisSolver:
 
         self.__calculate_placement(polyominoe_type, column_index)
 
-        print(self.grid)
-
         result: dict[int, bool] = self.__destroy_filled_rows()
         if result["destroyed"]:
             for polyominoe in self.polyominoes:
                 polyominoe.shift_down(self.grid)
-            print(self.grid)
 
     def __destroy_filled_rows(self) -> dict[int, bool]:
         """
@@ -137,7 +135,6 @@ class TetrisSolver:
         # will have a value of True
         mask: List[bool] = np.all(self.grid == 1, axis=1)
         if np.any(mask):
-            print(f"filled row found!")
 
             # Gets the indices of all rows in the grid that contain only '1's.
             filled_rows_indexes: List[int] = np.where(np.all(self.grid == 1, axis=1))[0]
@@ -157,8 +154,6 @@ class TetrisSolver:
             for filled_row_index in filled_rows_indexes:
                 self.grid[filled_row_index, :] = 0
 
-            print(self.grid)
-
             return {"filled_rows_indexes": filled_rows_indexes, "destroyed": True}
 
         return {"destroyed": False}
@@ -167,14 +162,6 @@ class TetrisSolver:
         """
          Computes the height of the top most cell which is occupied by a polyominoe, after
          a polyominoe sequence has been solved.
-
-        ```
-         Q0  │          │
-             │ ##       |
-             │ ##       │
-             └──────────┘
-         ```
-         If Q0 was the only polyominoe in the grid, the total height would be 2
         """
         # Finds the smallest row index where a 1 entry occurs in each column.
         first_one_row_indices = np.argmax(self.grid, axis=0)
@@ -202,7 +189,7 @@ class TetrisSolver:
 
         Args
         ----
-        input:str - The input containing the sequence of polyominoes to process. For example:\n
+        `input:str` - The input containing the sequence of polyominoes to process. For example:\n
             - 'Q0,Q1'
             - 'Q0,Q2,Q4,Q6,Q8'
 

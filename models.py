@@ -13,7 +13,7 @@ class Cell:
     col_index: int
 
 
-class InterfacePolyominoe(ABC):
+class AbstractPolyominoe(ABC):
     """
     Interface for all concrete Polyominoe implementations
     """
@@ -52,9 +52,11 @@ class InterfacePolyominoe(ABC):
         -------
         `True` if a collision has been detected, otherwise `False`
         """
+                
+        # NOTE: All concrete implementations could be generalized to handle rotations
         pass
 
-    def __get_collider_cells(self, grid: ndarray[int]) -> List[Cell]:
+    def __get_collider_cells(self) -> List[Cell]:
         """
         Gets the cells of the polyminoe which will be used to test against collisions. These cells
         will not have any neighboring cells directly at the bottom.\n
@@ -105,17 +107,17 @@ class InterfacePolyominoe(ABC):
             cell_colliders.append(bottom_cell)
 
         return cell_colliders
+    
 
-    def shift_down(self, grid: ndarray[int]):
+    def __can_shift_down(self,polyminoe_collider_cells:List[Cell]) -> bool:
         """
-        Shifts the polyominoe down to a free space after a filled row as been destroyed.
-        The polyominoe will only be moved if its remaining parts are above the removed filled row
+        Determines if the polyominoe can be shifted down the grid. 
+        The polyominoe will only be moved if its above the removed filled row
+
+        Returns
+        -------
+        `True` if the polyominoe can be moved down, otherwhise `False`
         """
-
-        if self.removed_row_index is None:
-            return
-
-        polyminoe_collider_cells: List[Cell] = self.__get_collider_cells(grid)
 
         polyominoe_smallest_row_index = sys.maxsize
         for cell in polyminoe_collider_cells:
@@ -124,9 +126,60 @@ class InterfacePolyominoe(ABC):
                 polyominoe_smallest_row_index = cell.row_index
 
         if polyominoe_smallest_row_index > self.removed_row_index:
-            return
+            return False
+        return True
+    
+    def __calculate_vertical_shift(self,grid: np.ndarray[int], polyminoe_collider_cells:List[Cell]) ->int:
+        """
+        Calculate the vertical shift required to move the polyminoe down the grid before
+        it collides with another existing polyminoe.
 
-        print(f"The splitted {self.type} will be shifted down")
+        Args:
+        -----
+        - `polyminoe_collider_cells: List[Cell]` -  List of cell objects with 'row_index' and 'col_index' attributes.
+        - `grid:np.ndarray[int]` - The 2D tetris grid.
+
+        Returns
+        -------
+        - `int`-  The vertical shift the polyminoe will be translated downwards by.
+        """
+
+        free_cell_row_index = -1
+
+        for cell in polyminoe_collider_cells:
+            # Extract column values below the current cell
+            column_values = grid[cell.row_index + 1 :, cell.col_index]
+
+            # Find indices where a free cell (0) is followed by an occupied cell (1)
+            indices = np.where((column_values[:-1] == 0) & (column_values[1:] == 1))[0]
+
+            # Determine the row index of the first occupied cell below the current cell
+            if indices.size > 0:
+                free_cell_row_index = indices[0]
+            else:
+                free_cell_row_index = grid.shape[0] - 1
+
+        # Calculate the smallest vertical shift (delta) that will be used
+        # to move the polyminoe downwards
+        smallest_delta = sys.maxsize
+        for cell in polyminoe_collider_cells:
+            delta = abs(free_cell_row_index - cell.row_index)
+            if delta < smallest_delta:
+                smallest_delta = delta
+
+        # Return the minimum vertical shift required for alignment
+        return smallest_delta
+
+    def shift_down(self, grid: ndarray[int]):
+        """
+        Shifts the polyominoe down to a free space after a filled row as been destroyed.
+        The polyominoe will only be moved if its above the removed filled row
+        """
+        
+        polyminoe_collider_cells: List[Cell] = self.__get_collider_cells()
+
+        can_shift_down = self.__can_shift_down(polyminoe_collider_cells)
+        if can_shift_down is False: return
 
         # TODO: # get row index which has the smallest delta  between all the collider cell row index
         # the above handles polyminoes which have collider cells on different rows. We always want to get
@@ -141,39 +194,24 @@ class InterfacePolyominoe(ABC):
           3  [0 1 1 0]
           4  [0 1 1 0]
           5  [0 1 1 0]
+
+              0 1 2 3 4 5 6 7 8 9
+          0  [0 0 0 0 0 0 0 0 0 0]
+          1  [0 0 1 1 0 0 0 0 0 0]
+          2  [0 0 1 1 0 0 0 0 0 0]
+          3  [0 0 0 0 0 0 0 0 0 0]
+          4  [1 1 0 0 1 1 1 1 1 1]
         """
 
-        free_cell_row_index = -1
+        shift_unit: int = self.__calculate_vertical_shift(grid,polyminoe_collider_cells)
 
-        for cell in polyminoe_collider_cells:
-            column_values = grid[cell.row_index + 1 :, cell.col_index]
-
-            # Find the row indices in the column_values where a free grid cell (0) is followed by an occupied grid cell (1)
-            indices = np.where((column_values[:-1] == 0) & (column_values[1:] == 1))[0]
-
-            if indices.size > 0:
-                free_cell_row_index = indices[0]
-            # there are only free grid cells (0) in the column_values
-            # in this case the free cell row index will be set to be the bottom one.
-            else:
-                free_cell_row_index = grid.shape[0] - 1
-
-        smallest_delta = sys.maxsize
-        shift_unit = None
-        for cell in polyminoe_collider_cells:
-            delta = abs(free_cell_row_index - cell.row_index)
-            if delta < smallest_delta:
-                smallest_delta = delta
-        shift_unit = smallest_delta
-
-        # move all body cells by the smallest delta of .... free_cell_row_index - cell.row_index
-
+        # shift the polyminoe downwards by the computed shift_unit
         for occupied_cell in self.body:
             grid[occupied_cell.row_index, occupied_cell.col_index] = 0
             occupied_cell.row_index = shift_unit + occupied_cell.row_index
             grid[occupied_cell.row_index, occupied_cell.col_index] = 1
 
-    def remove(self, filled_row_index: int) -> bool:
+    def remove(self, filled_row_index: int):
         """
         Removes all the parts of the polyminoe which intersect with the cells of the filled row
 
@@ -186,21 +224,10 @@ class InterfacePolyominoe(ABC):
         `True` if the polyminoe was completely removed from the grid. If it was split,
         `False` will be returned.
         """
-        previous_cell_count = len(self.body)
         self.body = [cell for cell in self.body if cell.row_index != filled_row_index]
+        self.removed_row_index = filled_row_index
 
-        current_cell_count = len(self.body)
-        if previous_cell_count != current_cell_count:
-            self.removed_row_index = filled_row_index
-            if current_cell_count == 0:
-                print(f"Removed {self.type} from grid")
-                return True
-            print(f"{self.type} was split")
-
-        return False
-
-
-class QPolyminoe(InterfacePolyominoe):
+class QPolyminoe(AbstractPolyominoe):
     """
     ```
     # #
@@ -233,7 +260,7 @@ class QPolyminoe(InterfacePolyominoe):
         return False
 
 
-class IPolyminoe(InterfacePolyominoe):
+class IPolyminoe(AbstractPolyominoe):
     """
     ```
     # # # #
@@ -261,9 +288,6 @@ class IPolyminoe(InterfacePolyominoe):
         """
         # # # #
         """
-
-        # NOTE: to handle rotation, we would need to implement a specifc collision algo for the  90/270 degree rotation.
-
         if grid[row_index + 1, column_index] == 1:
             return True
 
@@ -279,7 +303,7 @@ class IPolyminoe(InterfacePolyominoe):
         return False
 
 
-class TPolyminoe(InterfacePolyominoe):
+class TPolyminoe(AbstractPolyominoe):
     """
     ```
     # # #
@@ -334,7 +358,7 @@ class TPolyminoe(InterfacePolyominoe):
         return False
 
 
-class ZPolyminoe(InterfacePolyominoe):
+class ZPolyminoe(AbstractPolyominoe):
     """
     ```
     # #
@@ -374,7 +398,7 @@ class ZPolyminoe(InterfacePolyominoe):
         return False
 
 
-class SPolyminoe(InterfacePolyominoe):
+class SPolyminoe(AbstractPolyominoe):
     """
     ```
         # #
@@ -414,7 +438,7 @@ class SPolyminoe(InterfacePolyominoe):
         return False
 
 
-class LPolyminoe(InterfacePolyominoe):
+class LPolyminoe(AbstractPolyominoe):
     """
     ```
     #
@@ -451,7 +475,7 @@ class LPolyminoe(InterfacePolyominoe):
         return False
 
 
-class JPolyminoe(InterfacePolyominoe):
+class JPolyminoe(AbstractPolyominoe):
     """
     ```
       #
