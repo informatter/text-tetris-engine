@@ -1,4 +1,13 @@
-from models import QPolyminoe,JPolyminoe,SPolyminoe,LPolyminoe, IPolyminoe, ZPolyminoe, TPolyminoe, InterfacePolyominoe
+from models import (
+    QPolyminoe,
+    JPolyminoe,
+    SPolyminoe,
+    LPolyminoe,
+    IPolyminoe,
+    ZPolyminoe,
+    TPolyminoe,
+    InterfacePolyominoe,
+)
 
 
 class PolyominoeFactory:

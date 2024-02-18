@@ -8,7 +8,7 @@ from factory import PolyominoeFactory
 
 class TetrisSolver:
     def __init__(self, rows: int = 10, columns: int = 10):
-        self.grid:ndarray[int] = None
+        self.grid: ndarray[int] = None
         self.rows = rows
         self.columns = columns
         self.polyominoes: List[InterfacePolyominoe] = []
@@ -57,7 +57,7 @@ class TetrisSolver:
         0 = empty
         1 = occupied
         """
-        self.grid:ndarray[int] = np.zeros((self.rows, self.columns), dtype=int)
+        self.grid: ndarray[int] = np.zeros((self.rows, self.columns), dtype=int)
 
     def __calculate_placement(self, polyominoe_type: str, column_index: int):
         """
@@ -115,13 +115,13 @@ class TetrisSolver:
 
         print(self.grid)
 
-        result: dict[int,bool] = self.__destroy_filled_rows()
+        result: dict[int, bool] = self.__destroy_filled_rows()
         if result["destroyed"]:
             for polyominoe in self.polyominoes:
                 polyominoe.shift_down(self.grid)
             print(self.grid)
 
-    def __destroy_filled_rows(self) -> dict[int,bool]:
+    def __destroy_filled_rows(self) -> dict[int, bool]:
         """
         Find the first row in the array that contains only '1' entries and replace all '1's with '0's in that row.
 
@@ -140,33 +140,28 @@ class TetrisSolver:
             print(f"filled row found!")
 
             # Gets the indices of all rows in the grid that contain only '1's.
-            filled_rows_indexes:List[int] = np.where(np.all(self.grid == 1, axis=1))[0]
+            filled_rows_indexes: List[int] = np.where(np.all(self.grid == 1, axis=1))[0]
 
             # TODO : See if this can be done without a nested forloop!
             for filled_row_index in filled_rows_indexes:
                 for polyominoe in self.polyominoes:
-                   polyominoe.remove(filled_row_index)
+                    polyominoe.remove(filled_row_index)
 
             # Only keep polyominoes which did not get completely removed.
             self.polyominoes = [
-                polyominoe for polyominoe in self.polyominoes if len(polyominoe.body)!=0
-            ]          
+                polyominoe
+                for polyominoe in self.polyominoes
+                if len(polyominoe.body) != 0
+            ]
 
             for filled_row_index in filled_rows_indexes:
-                self.grid[
-                    filled_row_index, :
-                ] = 0
+                self.grid[filled_row_index, :] = 0
 
             print(self.grid)
 
-            return {
-                "filled_rows_indexes":filled_rows_indexes,
-                "destroyed":True
-            }
+            return {"filled_rows_indexes": filled_rows_indexes, "destroyed": True}
 
-        return {
-            "destroyed":False
-        }
+        return {"destroyed": False}
 
     def __compute_sequence_height(self) -> int:
         """
@@ -195,7 +190,7 @@ class TetrisSolver:
         height = self.rows - smallest_row_index
 
         return height
-    
+
     def reset(self):
         self.polyominoes = []
         self.__init_state()
@@ -226,5 +221,5 @@ class TetrisSolver:
 
             self.__place(polyominoe, column_index)
 
-        sequence_height =  self.__compute_sequence_height()
+        sequence_height = self.__compute_sequence_height()
         return sequence_height
