@@ -6,12 +6,11 @@ from models import InterfacePolyominoe
 from factory import PolyominoeFactory
 
 
-class Tetris:
+class TetrisSolver:
     def __init__(self, rows: int = 10, columns: int = 10):
         self.grid:ndarray[int] = None
         self.rows = rows
         self.columns = columns
-        self.polyominoe_types = ["Q", "Z", "S", "T", "I", "L", "J"]
         self.polyominoes: List[InterfacePolyominoe] = []
         self.polyominoe_factory = PolyominoeFactory()
         self.is_empty: bool = True
@@ -69,10 +68,6 @@ class Tetris:
 
         target_column: List[int] = self.grid[:, column_index]
 
-        if polyominoe_type not in self.polyominoe_types:
-            print(f"polyominoe type {polyominoe_type} is currently not implemented! ")
-            return
-
         polyominoe: InterfacePolyominoe = self.polyominoe_factory.create(
             polyominoe_type
         )
@@ -120,47 +115,56 @@ class Tetris:
 
         print(self.grid)
 
-        result: dict[int,bool] = self.__destroy_filled_row()
+        result: dict[int,bool] = self.__destroy_filled_rows()
         if result["destroyed"]:
-            filled_row_index = result["filled_row_index"]
             for polyominoe in self.polyominoes:
                 polyominoe.shift_down(self.grid)
             print(self.grid)
 
-    def __destroy_filled_row(self) -> dict[int,bool]:
+    def __destroy_filled_rows(self) -> dict[int,bool]:
         """
         Find the first row in the array that contains only '1' entries and replace all '1's with '0's in that row.
 
         Returns
         -------
-        `True` if a filled row was found and destroyed, otherwise `False`
+        A dictionary containing the following keys:
+        - `filled_rows_indexes:List[int]` - A list containing all the indices of the rows which are filled
+        - `destroyed:bool` - A boolean value which is `True` is there where any filled rows that where destroyed.
+            `destroyed` would be false`False` if no filled rows where found
 
         """
-        # creates a boolean mask for all the rows. Only the rows which is filled
+        # creates a boolean mask for all the rows. Only the rows which are filled
         # will have a value of True
         mask: List[bool] = np.all(self.grid == 1, axis=1)
-
         if np.any(mask):
             print(f"filled row found!")
-            filled_row_index = np.argmax(
-                mask
-            )  # Find the index of the first row with only '1' entries
 
-            for polyominoe in self.polyominoes:
-                polyominoe.remove(filled_row_index)
+            # Gets the indices of all rows in the grid that contain only '1's.
+            filled_rows_indexes:List[int] = np.where(np.all(self.grid == 1, axis=1))[0]
 
-            self.grid[
-                filled_row_index, :
-            ] = 0  # Replace all '1's with '0's in the found row
+            # TODO : See if this can be done without a nested forloop!
+            for filled_row_index in filled_rows_indexes:
+                for polyominoe in self.polyominoes:
+                   polyominoe.remove(filled_row_index)
+
+            # Only keep polyominoes which did not get completely removed.
+            self.polyominoes = [
+                polyominoe for polyominoe in self.polyominoes if len(polyominoe.body)!=0
+            ]          
+
+            for filled_row_index in filled_rows_indexes:
+                self.grid[
+                    filled_row_index, :
+                ] = 0
 
             print(self.grid)
+
             return {
-                "filled_row_index":filled_row_index,
+                "filled_rows_indexes":filled_rows_indexes,
                 "destroyed":True
             }
 
         return {
-            "filled_row_index":-1,
             "destroyed":False
         }
 

@@ -1,6 +1,9 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+import sys
 from typing import List
+
+import numpy as np
 from numpy import ndarray
 
 @dataclass
@@ -15,10 +18,11 @@ class InterfacePolyominoe(ABC):
 
     def __init__(self, type):
         self.type: str = type
-        self.occupied_cells: List[Cell] = []
+        self.removed_row_index:int|None = None
+        self.body: List[Cell] = []
 
     @abstractmethod
-    def add(self, grid, start_cell: dict):
+    def add(self, grid:ndarray[int], start_cell: dict):
         """
         Adds the polyminoe to the grid once the Tetris engine has computed its location.
         This sets all cells within the polyminoe's shape to occupied.
@@ -47,53 +51,164 @@ class InterfacePolyominoe(ABC):
         `True` if a collision has been detected, otherwise `False`
         """
         pass
+
+    def __get_collider_cells(self,grid:ndarray[int]) -> List[Cell]:
+        """
+        Gets the cells of the polyminoe which will be used to test against collisions. These cells
+        will not have any neighboring cells directly at the bottom.\n
+        For example, in the diagram bellow the cells marked with 'C' would be categorized as collider cells
+        because they don't have any bottom neighbor cells in the polyminoe's body.
+
+        In addition, the collider cells of a polyminoe can be either on the same row, or on different rows.
+
+        ```
+        # In this case the 2 collider cells are at the bottom row of the polyminoe
+        [X]
+        [X]
+        [C][C]
+        
+        # In this case the 2 collider cells are at different rows in the polyminoe
+        [C][X]
+           [X]
+           [C]
+        ```
+
+
+        Returns
+        --------
+        A collection of `Cell`'s which are all the cell colliders of the polyminoe
+        """
+
+        # get cells with largest row index for each column of the shape
+
+        polyminoe_columns:dict[int,List[Cell]] ={}
+
+        for cell in self.body:
+            if cell.col_index not in polyminoe_columns:
+                polyminoe_columns[cell.col_index] = [cell]
+            else:
+                cells:List[Cell] = polyminoe_columns[cell.col_index]
+                cells.append(cell)
+                polyminoe_columns[cell.col_index] = cells
+
+        cell_colliders:List[Cell] = []
+        for cells in polyminoe_columns.values():
+            largest_row_index = -1
+            bottom_cell = None
+            for cell in cells:
+                if cell.row_index > largest_row_index:
+                    largest_row_index = cell.row_index
+                    bottom_cell = cell
+
+            cell_colliders.append(bottom_cell)
+        
+        return cell_colliders
+
+        
     
-    # @abstractmethod
-    # def shift_down(self,grid:ndarray[int]):
-    #     """
-    #     Shifts the polyominoe down to a free space after a filled row as been destroyed.
-    #     """
-    #     pass
+
 
     def shift_down(self,grid:ndarray[int]):
         """
         Shifts the polyominoe down to a free space after a filled row as been destroyed.
+        The polyominoe will only be moved if its remaining parts are above the removed filled row
         """
-        new_row_index = -1
-        row_count:int = grid.shape[0]
-        
-        collision_count = 0
-        for occupied_cell in self.occupied_cells:
-            # polyominoe cell is already at the bottom of the grid, so ignore.
-            if occupied_cell.row_index == row_count - 1:
-                continue
 
-            next_row_index = occupied_cell.row_index + 1
-            next_cell:int = grid[next_row_index,occupied_cell.col_index]
-            if next_cell == 1:
-                collision_count+=1
-                continue
-            new_row_index = next_row_index
-        
-        if collision_count != 0: return
+        if self.removed_row_index is None:
+            return
 
-        # Move polyminoe cells down to the new_row_index
-        for occupied_cell in self.occupied_cells:
+        polyminoe_collider_cells:List[Cell] =  self.__get_collider_cells(grid)
+
+        polyominoe_smallest_row_index = sys.maxsize
+        for cell in polyminoe_collider_cells:
+            cell.row_index
+            if cell.row_index < polyominoe_smallest_row_index:
+                polyominoe_smallest_row_index = cell.row_index
+
+        if polyominoe_smallest_row_index > self.removed_row_index:
+            return
+        
+        print(f"The splitted {self.type} will be shifted down")
+
+
+        # TODO: # get row index which has the smallest delta  between all the collider cell row index
+        # the above handles polyminoes which have collider cells on different rows. We always want to get
+        # the row index of the free cell which is closest to a cell collider. This will determine the total amount
+        # that the polyminoe needs to shift down
+
+        """
+              0 1 2 3
+          0  [0 1 1 0]
+          1  [0 0 1 0]      
+          2  [0 0 0 0] -> desired row index: 2 , desired column index: 2
+          3  [0 1 1 0]
+          4  [0 1 1 0]
+          5  [0 1 1 0]
+        """
+
+        free_cell_row_index = -1
+ 
+        for cell in polyminoe_collider_cells:
+
+            column_values = grid[cell.row_index + 1:, cell.col_index]
+
+            # Find the row indices in the column_values where a free grid cell (0) is followed by an occupied grid cell (1)
+            indices = np.where((column_values[:-1] == 0) & (column_values[1:] == 1))[0]
+
+            if indices.size > 0:
+                free_cell_row_index =  indices[0]
+            # there are only free grid cells (0) in the column_values
+            # in this case the free cell row index will be set to be the bottom one.
+            else:
+                free_cell_row_index = grid.shape[0] -1
+
+        smallest_delta = sys.maxsize
+        shift_unit = None
+        for cell in polyminoe_collider_cells:
+            delta = abs(free_cell_row_index - cell.row_index)
+            if delta < smallest_delta:
+                smallest_delta = delta
+        shift_unit = smallest_delta
+
+
+        # move all body cells by the smallest delta of .... free_cell_row_index - cell.row_index
+            
+
+        for occupied_cell in self.body:
             grid[occupied_cell.row_index,occupied_cell.col_index] = 0
-            occupied_cell.row_index = new_row_index
+            occupied_cell.row_index = shift_unit + occupied_cell.row_index
             grid[occupied_cell.row_index,occupied_cell.col_index] = 1
 
-    def remove(self, filled_row_index: int):
+
+    def remove(self, filled_row_index: int) -> bool:
         """
         Removes all the parts of the polyminoe which intersect with the cells of the filled row
 
         Args
         ----
         `filled_row_index:int` - The index of the filled row
+
+        Returns
+        -------
+        `True` if the polyminoe was completely removed from the grid. If it was split,
+        `False` will be returned.
         """
-        self.occupied_cells = [
-            cell for cell in self.occupied_cells if cell.row_index != filled_row_index
+        previous_cell_count = len(self.body)
+        self.body = [
+            cell for cell in self.body if cell.row_index != filled_row_index
         ]
+
+        current_cell_count = len(self.body)
+        if  previous_cell_count != current_cell_count:
+            self.removed_row_index = filled_row_index
+            if current_cell_count == 0:
+                print(f'Removed {self.type} from grid')
+                return True
+            print(f'{self.type} was split')
+        
+        return False
+
+
 
 
 class QPolyminoe(InterfacePolyominoe):
@@ -111,14 +226,14 @@ class QPolyminoe(InterfacePolyominoe):
         row = start_cell["row"]
         col = start_cell["column"]
 
-        self.occupied_cells = [
+        self.body = [
             Cell(row,col),
             Cell(row -1,col),
             Cell(row-1,col+1),
             Cell(row,col+1),
         ]
 
-        for occupied_cell in self.occupied_cells:
+        for occupied_cell in self.body:
             grid[occupied_cell.row_index, occupied_cell.col_index] = 1
 
     def check_collision(self, grid, row_index: int, column_index: int) -> bool:
@@ -128,32 +243,6 @@ class QPolyminoe(InterfacePolyominoe):
             return True
         return False
     
-    # def shift_down(self,grid:ndarray[int]):
-
-    #     new_row_index = -1
-    #     row_count:int = grid.shape[0]
-        
-    #     collision_count = 0
-    #     for occupied_cell in self.occupied_cells:
-    #         # polyominoe cell is already at the bottom of the grid, so ignore.
-    #         if occupied_cell.row_index == row_count - 1:
-    #             continue
-
-    #         next_row_index = occupied_cell.row_index + 1
-    #         next_cell:int = grid[next_row_index,occupied_cell.col_index]
-    #         if next_cell == 1:
-    #             collision_count+=1
-    #             continue
-    #         new_row_index = next_row_index
-        
-    #     if collision_count != 0: return
-
-    #     # Move polyminoe cells down to the new_row_index
-    #     for occupied_cell in self.occupied_cells:
-    #         grid[occupied_cell.row_index,occupied_cell.col_index] = 0
-    #         occupied_cell.row_index = new_row_index
-    #         grid[occupied_cell.row_index,occupied_cell.col_index] = 1
- 
 
 class IPolyminoe(InterfacePolyominoe):
     """
@@ -169,14 +258,14 @@ class IPolyminoe(InterfacePolyominoe):
         row = start_cell["row"]
         col = start_cell["column"]
 
-        self.occupied_cells = [
+        self.body = [
             Cell(row,col),
             Cell(row,col+1),
             Cell(row,col+2),
             Cell(row,col+3)
         ]
 
-        for occupied_cell in self.occupied_cells:
+        for occupied_cell in self.body:
             grid[occupied_cell.row_index, occupied_cell.col_index] = 1
 
 
@@ -201,9 +290,6 @@ class IPolyminoe(InterfacePolyominoe):
 
         return False
     
-    # def shift_down(self,grid):
-    #     pass
-
 
 class TPolyminoe(InterfacePolyominoe):
     """
@@ -211,7 +297,6 @@ class TPolyminoe(InterfacePolyominoe):
     # # #
       #
     ```
-
     """
 
     def __init__(self):
@@ -222,45 +307,45 @@ class TPolyminoe(InterfacePolyominoe):
         # represents the index of the left-most column of the grid that the shape occupies, starting from zero.
         col = start_cell["column"]
 
-        row_offset = -1  # move up one row to place the left part of the T
+        row_count = grid.shape[0]
+        if row == row_count - 1:
+            row_offset = -1  # move up one row to place the left part of the T
+            self.body = [
+                Cell(row + row_offset,col),
+                Cell(row + row_offset,col+1),
+                Cell(row + row_offset,col+2),
+                Cell(row,col+1)
+            ]
 
-        self.occupied_cells = [
-            Cell(row + row_offset,col),
-            Cell(row + row_offset,col+1),
-            Cell(row + row_offset,col+2),
-            Cell(row,col+1)
-        ]
+        else:
+            self.body = [
+                Cell(row,col),
+                Cell(row,col+1),
+                Cell(row,col+2),
+                Cell(row + 1,col+1)
+            ]
 
-        for occupied_cell in self.occupied_cells:
+        for occupied_cell in self.body:
             grid[occupied_cell.row_index, occupied_cell.col_index] = 1
 
-        # grid[row + row_offset, col] = 1  # ocuppies left most cell
-        # grid[row + row_offset, col + 1] = 1  # ocuppies center  cell
-        # grid[row + row_offset, col + 2] = 1  # ocuppies right most  cell
-        # grid[row, col + 1] = 1  # ocuppies bottom  cell
-
     def check_collision(self, grid, row_index: int, column_index: int) -> bool:
-        """
-        ```
-        # # #
-          #
-        ```
-        The integer represents the left-most column of the grid that the shape occupies, starting from zero.
-        """
+
         # NOTE: to handle rotation, we would need to implement a specifc collision algo for each rotation (90,180,270)
-
+        
         # checks if top right leg has a colliding cell underneath it
-        if grid[row_index, column_index + 1] == 1:
+        if grid[row_index + 1 , column_index] == 1:
             return True
+        
         # checks if top left leg has a colliding cell underneath it
-        if grid[row_index, column_index - 1] == 1:
+        if grid[row_index + 1 , column_index + 2] == 1:
             return True
-
-        # checks if root has a colliding cell underneath it
-        if grid[row_index + 1, column_index] == 1:
+        
+        # checks if bottom has a colliding cell underneath it
+        if grid[row_index + 1 , column_index +1] == 1:
             return True
-
+        
         return False
+        
 
 
 class ZPolyminoe(InterfacePolyominoe):
@@ -277,28 +362,29 @@ class ZPolyminoe(InterfacePolyominoe):
     def add(self, grid, start_cell: dict):
         row = start_cell["row"]
         col = start_cell["column"]
-        self.occupied_cells = [
+        self.body = [
             Cell(row,col),
             Cell(row,col+1),
             Cell(row +1,col + 1),
             Cell(row +1,col + 2)
         ]
 
-        for occupied_cell in self.occupied_cells:
+        for occupied_cell in self.body:
             grid[occupied_cell.row_index, occupied_cell.col_index] = 1
 
 
     def check_collision(self, grid, row_index: int, column_index: int) -> bool:
 
         # checks if top left leg has a colliding cell underneath it
-        if grid[row_index, column_index - 1] == 1:
+        if grid[row_index + 1, column_index] == 1:
             return True
+
         # checks if bottom right leg has a colliding cell underneath it
-        if grid[row_index + 1, column_index + 1] == 1:
+        if grid[row_index + 1, column_index + 2] == 1:
             return True
 
         # checks if root has a colliding cell underneath it
-        if grid[row_index + 1, column_index] == 1:
+        if grid[row_index + 1, column_index + 1] == 1:
             return True
 
         return False
@@ -318,14 +404,14 @@ class SPolyminoe(InterfacePolyominoe):
     def add(self, grid, start_cell: dict):
         row = start_cell["row"]
         col = start_cell["column"]
-        self.occupied_cells = [
+        self.body = [
             Cell(row,col),
             Cell(row,col+1),
             Cell(row -1,col+1),
             Cell(row -1,col + 2)
         ]
 
-        for occupied_cell in self.occupied_cells:
+        for occupied_cell in self.body:
             grid[occupied_cell.row_index, occupied_cell.col_index] = 1
 
 
@@ -361,14 +447,14 @@ class LPolyminoe(InterfacePolyominoe):
     def add(self, grid, start_cell: dict):
         row = start_cell["row"]
         col = start_cell["column"]
-        self.occupied_cells = [
+        self.body = [
             Cell(row,col),
             Cell(row-1,col),
             Cell(row -2,col),
             Cell(row,col + 1)
         ]
 
-        for occupied_cell in self.occupied_cells:
+        for occupied_cell in self.body:
             grid[occupied_cell.row_index, occupied_cell.col_index] = 1
 
 
@@ -400,14 +486,14 @@ class JPolyminoe(InterfacePolyominoe):
     def add(self, grid, start_cell: dict):
         row = start_cell["row"]
         col = start_cell["column"]
-        self.occupied_cells = [
+        self.body = [
             Cell(row,col),
             Cell(row,col+1),
             Cell(row-1,col+1),
             Cell(row-2,col + 1)
         ]
 
-        for occupied_cell in self.occupied_cells:
+        for occupied_cell in self.body:
             grid[occupied_cell.row_index, occupied_cell.col_index] = 1
 
 
