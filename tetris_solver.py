@@ -54,6 +54,7 @@ class TetrisSolver:
         - 0 = empty
         - 1 = occupied
         """
+
         self.grid: ndarray[int] = np.zeros((self.rows, self.columns), dtype=int)
 
     def __calculate_placement(self, polyominoe_type: str, column_index: int):
@@ -67,8 +68,6 @@ class TetrisSolver:
 
         """
 
-        target_column: List[int] = self.grid[:, column_index]
-
         polyominoe: AbstractPolyominoe = self.polyominoe_factory.create(polyominoe_type)
 
         bottom_most_cell_index = self.rows - 1
@@ -79,10 +78,18 @@ class TetrisSolver:
             self.is_empty = False
             return
 
-        found_collision: bool = False
-        total_entries: int = len(target_column)
+        # only contains empty cells (0)
+        cells_to_traverse: List[int] = self.grid[
+            self.grid[:, column_index] == 0, column_index
+        ]
 
-        for row_index, cell in enumerate(target_column):
+        found_collision: bool = False
+        total_entries: int = self.grid.shape[1]
+
+        # NOTE: This literally recreates 'dropping' polyominoes from the top
+        # but I believe that for the purposes of the excersice, its not strictly neccesary.
+        # There can be a more efficient way which is to start from the bottom of the grid
+        for row_index, cell in enumerate(cells_to_traverse):
             if row_index == total_entries - 1:
                 continue
 
@@ -136,7 +143,6 @@ class TetrisSolver:
             # Gets the indices of all rows in the grid that contain only '1's.
             filled_rows_indexes: List[int] = np.where(np.all(self.grid == 1, axis=1))[0]
 
-            # TODO : See if this can be done without a nested forloop!
             for filled_row_index in filled_rows_indexes:
                 for polyominoe in self.polyominoes:
                     polyominoe.remove(filled_row_index)

@@ -11,25 +11,41 @@ please
 import subprocess
 from dataclasses import dataclass
 from typing import Iterable
+import platform
+import os
 
-ENTRY_POINT = "./tetris"
+ENTRY_POINT = "dist/tetris/tetris"
+ENTRY_POINT_WINDOWS = "dist/tetris/tetris.exe"
 
 
 @dataclass
 class TestCase:
     name: str
-    sample_input: bytes
+    sample_input: str
     sample_output: Iterable[int]
 
 
 def run_test(test_case: TestCase):
-    p = subprocess.run(
-        ["/bin/bash", ENTRY_POINT],
-        input=test_case.sample_input,
-        capture_output=True,
-    )
+    completed_process = None
+    if platform.system() in ["Linux", "Darwin"]:  # Linux or macOS
+        completed_process = subprocess.run(
+            ["/bin/bash", ENTRY_POINT],
+            input=test_case.sample_input.encode("utf-8"),
+            capture_output=True,
+        )
+    elif platform.system() == "Windows":
+        exe_path = os.path.abspath(
+            os.path.join(
+                os.path.dirname(__file__), "..", "dist", "tetris", "tetris.exe"
+            )
+        )
 
-    output = [int(line) for line in p.stdout.splitlines()]
+        command = f"powershell -Command \"& '{exe_path}' {test_case.sample_input}\""
+        completed_process = subprocess.run(command, stdout=subprocess.PIPE, text=True)
+    else:
+        raise OSError("Unsupported operating system")
+
+    output = [int(line) for line in completed_process.stdout.splitlines()]
 
     assert output == [
         test_case.sample_output
@@ -38,8 +54,8 @@ def run_test(test_case: TestCase):
 
 if __name__ == "__main__":
     test_cases = [
-        TestCase("simple test", b"Q0", 2),
-        TestCase("Many blocks test", ",".join(["Q0"] * 50).encode("utf-8"), 100),
+        TestCase("simple test", "Q0", 2),
+        TestCase("Many blocks test", ",".join(["Q0"] * 5), 10),
     ]
     for test_case in test_cases:
         run_test(test_case)

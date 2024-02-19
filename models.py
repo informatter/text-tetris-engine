@@ -40,12 +40,13 @@ class AbstractPolyominoe(ABC):
     @abstractmethod
     def check_collision(self, grid, row_index: int, column_index: int) -> bool:
         """
-        Checks if the polyminoe is colliding against any other polyminoe in the grid, while the Tetris engine is
-        computing its location.
+        Checks if the polyminoe is colliding against any other polyminoe's which are below it.
+        If the polyminoe is not colliding, the `row_index` will determine the row of the where the
+        free cell is located.
 
         Args
         ----
-        - `row_index: int` - The current row index
+        - `row_index: int` - The current row index.
         - `column_index: int` - The index of the left-most column of the grid that the polyminoe occupies
 
         Returns
@@ -154,10 +155,11 @@ class AbstractPolyominoe(ABC):
             # Find indices where a free cell (0) is followed by an occupied cell (1)
             indices = np.where((column_values[:-1] == 0) & (column_values[1:] == 1))[0]
 
-            # Determine the row index of the first occupied cell below the current cell
             if indices.size > 0:
+                # Determine the row index of the first free cell followed by ab occpupied cell.
                 free_cell_row_index = indices[0]
             else:
+                # the target column has only empty cells (0)
                 free_cell_row_index = grid.shape[0] - 1
 
         # Calculate the smallest vertical shift (delta) that will be used
@@ -197,12 +199,6 @@ class AbstractPolyominoe(ABC):
           4  [0 1 1 0]
           5  [0 1 1 0]
 
-              0 1 2 3 4 5 6 7 8 9
-          0  [0 0 0 0 0 0 0 0 0 0]
-          1  [0 0 1 1 0 0 0 0 0 0]
-          2  [0 0 1 1 0 0 0 0 0 0]
-          3  [0 0 0 0 0 0 0 0 0 0]
-          4  [1 1 0 0 1 1 1 1 1 1]
         """
 
         shift_unit: int = self.__calculate_vertical_shift(

@@ -5,4 +5,7 @@ __pycache__
 .ruff_cache
 .vscode
 
+tetris.spec
 /env
+/build
+/dist
