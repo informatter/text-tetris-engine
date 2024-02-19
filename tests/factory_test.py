@@ -13,7 +13,6 @@ from models import (
     IPolyminoe,
     ZPolyminoe,
     TPolyminoe,
-    AbstractPolyominoe,
 )
 import pytest
 

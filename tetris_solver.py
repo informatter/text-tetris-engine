@@ -45,7 +45,7 @@ class TetrisSolver:
         match = re.match(r"([A-Za-z])(\d+)", input)
         column_index = int(match.group(2))
         if column_index == self.columns:
-            column_index = self.column - 1
+            column_index = self.columns - 1
         return {"column_index": int(match.group(2)), "polyominoe": match.group(1)}
 
     def __init_state(self):
@@ -69,9 +69,7 @@ class TetrisSolver:
 
         target_column: List[int] = self.grid[:, column_index]
 
-        polyominoe: AbstractPolyominoe = self.polyominoe_factory.create(
-            polyominoe_type
-        )
+        polyominoe: AbstractPolyominoe = self.polyominoe_factory.create(polyominoe_type)
 
         bottom_most_cell_index = self.rows - 1
 
@@ -135,7 +133,6 @@ class TetrisSolver:
         # will have a value of True
         mask: List[bool] = np.all(self.grid == 1, axis=1)
         if np.any(mask):
-
             # Gets the indices of all rows in the grid that contain only '1's.
             filled_rows_indexes: List[int] = np.where(np.all(self.grid == 1, axis=1))[0]
 
@@ -160,8 +157,8 @@ class TetrisSolver:
 
     def __compute_sequence_height(self) -> int:
         """
-         Computes the height of the top most cell which is occupied by a polyominoe, after
-         a polyominoe sequence has been solved.
+        Computes the height of the top most cell which is occupied by a polyominoe, after
+        a polyominoe sequence has been solved.
         """
         # Finds the smallest row index where a 1 entry occurs in each column.
         first_one_row_indices = np.argmax(self.grid, axis=0)

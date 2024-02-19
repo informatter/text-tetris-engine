@@ -20,7 +20,7 @@ def tetris_solver():
     return TetrisSolver()
 
 
-def test_solver_10_by_10_grid(tetris_solver: TetrisSolver):
+def test_solver(tetris_solver: TetrisSolver):
     test_cases = [
         TestCase("Q0", 2),
         TestCase("Q0,Q1", 4),
@@ -42,8 +42,8 @@ def test_solver_10_by_10_grid(tetris_solver: TetrisSolver):
         TestCase("S0,S2,S4,S6", 8),
         TestCase("S0,S2,S4,S5,Q8,Q8,Q8,Q8,T1,Q1,I0,Q4", 8),
         TestCase("L0,J3,L5,J8,T1,T6,S2,Z5,T0,T7", 0),
-        TestCase('Q0,I2,I6,I0,I6,I6,Q2,Q4',2),
-        TestCase(",".join(["Q0"] * 10),10)
+        TestCase("Q0,I2,I6,I0,I6,I6,Q2,Q4", 2),
+        TestCase(",".join(["Q0"] * 10), 10),
     ]
 
     for test_case in test_cases:

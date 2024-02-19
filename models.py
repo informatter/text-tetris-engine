@@ -52,7 +52,7 @@ class AbstractPolyominoe(ABC):
         -------
         `True` if a collision has been detected, otherwise `False`
         """
-                
+
         # NOTE: All concrete implementations could be generalized to handle rotations
         pass
 
@@ -107,11 +107,10 @@ class AbstractPolyominoe(ABC):
             cell_colliders.append(bottom_cell)
 
         return cell_colliders
-    
 
-    def __can_shift_down(self,polyminoe_collider_cells:List[Cell]) -> bool:
+    def __can_shift_down(self, polyminoe_collider_cells: List[Cell]) -> bool:
         """
-        Determines if the polyominoe can be shifted down the grid. 
+        Determines if the polyominoe can be shifted down the grid.
         The polyominoe will only be moved if its above the removed filled row
 
         Returns
@@ -128,8 +127,10 @@ class AbstractPolyominoe(ABC):
         if polyominoe_smallest_row_index > self.removed_row_index:
             return False
         return True
-    
-    def __calculate_vertical_shift(self,grid: np.ndarray[int], polyminoe_collider_cells:List[Cell]) ->int:
+
+    def __calculate_vertical_shift(
+        self, grid: np.ndarray[int], polyminoe_collider_cells: List[Cell]
+    ) -> int:
         """
         Calculate the vertical shift required to move the polyminoe down the grid before
         it collides with another existing polyminoe.
@@ -175,11 +176,12 @@ class AbstractPolyominoe(ABC):
         Shifts the polyominoe down to a free space after a filled row as been destroyed.
         The polyominoe will only be moved if its above the removed filled row
         """
-        
+
         polyminoe_collider_cells: List[Cell] = self.__get_collider_cells()
 
         can_shift_down = self.__can_shift_down(polyminoe_collider_cells)
-        if can_shift_down is False: return
+        if can_shift_down is False:
+            return
 
         # TODO: # get row index which has the smallest delta  between all the collider cell row index
         # the above handles polyminoes which have collider cells on different rows. We always want to get
@@ -203,7 +205,9 @@ class AbstractPolyominoe(ABC):
           4  [1 1 0 0 1 1 1 1 1 1]
         """
 
-        shift_unit: int = self.__calculate_vertical_shift(grid,polyminoe_collider_cells)
+        shift_unit: int = self.__calculate_vertical_shift(
+            grid, polyminoe_collider_cells
+        )
 
         # shift the polyminoe downwards by the computed shift_unit
         for occupied_cell in self.body:
@@ -226,6 +230,7 @@ class AbstractPolyominoe(ABC):
         """
         self.body = [cell for cell in self.body if cell.row_index != filled_row_index]
         self.removed_row_index = filled_row_index
+
 
 class QPolyminoe(AbstractPolyominoe):
     """
@@ -401,8 +406,8 @@ class ZPolyminoe(AbstractPolyominoe):
 class SPolyminoe(AbstractPolyominoe):
     """
     ```
-        # #
       # #
+    # #
     ```
     """
 
