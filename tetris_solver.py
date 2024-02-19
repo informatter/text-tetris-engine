@@ -1,4 +1,5 @@
 import numpy as np
+import sys
 from numpy import ndarray
 from typing import List
 import re
@@ -7,10 +8,11 @@ from factory import PolyominoeFactory
 
 
 class TetrisSolver:
-    def __init__(self, rows: int = 10, columns: int = 10):
+    def __init__(self, rows: int = 10, columns: int = 10, verbose=False):
         self.grid: ndarray[int] = None
         self.rows = rows
         self.columns = columns
+        self.verbose:bool = verbose
         self.polyominoes: List[AbstractPolyominoe] = []
         self.polyominoe_factory = PolyominoeFactory()
         self.is_empty: bool = True
@@ -123,6 +125,7 @@ class TetrisSolver:
         if result["destroyed"]:
             for polyominoe in self.polyominoes:
                 polyominoe.shift_down(self.grid)
+       
 
     def __destroy_filled_rows(self) -> dict[int, bool]:
         """
@@ -210,6 +213,9 @@ class TetrisSolver:
             column_index: int = polyominoe_data["column_index"]
 
             self.__place(polyominoe, column_index)
-
+        
+        if self.verbose:
+            np.savetxt(sys.stdout, self.grid, fmt='%d', delimiter=' ')
+            print('\n')
         sequence_height = self.__compute_sequence_height()
         return sequence_height

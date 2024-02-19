@@ -13,11 +13,15 @@ Built against python 3.11.7
 
 ### Create executable
 
-Run the following command:
+**Install dependencies**
+
+`pip install -r requirements.txt`
+
+**Run the following command:**
 
 `pyinstaller tetris.py`
 
-This will create two new folders in the root directory:
+**This will create two new folders in the root directory:**
 
 `build` and `dist` The exe will be under `dist/tetris`
 
@@ -30,6 +34,8 @@ Windows 🪟
 Mac 🍎 / Linux 🐧
 
 `dist/tetris/tetris 'Q0,Q1'`
+
+Use `--help for more options`
 
 
 ## Run using python
@@ -61,6 +67,8 @@ Mac 🍎 / Linux 🐧
 ### Run solver
 
 `python tetris.py 'Q0,Q2'`
+
+Use `--help for more options`
 
 # Run tests 🧪
 
