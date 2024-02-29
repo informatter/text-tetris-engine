@@ -59,6 +59,8 @@ The following supported pieces are Q, S, Z, I, L, J and T.
  The input is provided as a string like:  'Q0,Q1'
  The integers correspond to the left most column the polyminoe should be placed at.
 
+ The program outputs the final configuration height. For example if only a Q shape is left and its in the bottom of the board, the output would be 2
+
 Built against python 3.11.7 🐍
 
 
